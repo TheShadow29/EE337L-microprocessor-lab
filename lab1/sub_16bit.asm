@@ -5,27 +5,29 @@ org 00H
 	Ljmp main
 	
 	INIT:
-		; adding 0x9A90 and 0x1A90
+		; adding 0xc821 and 0x9228
 		
 		mov R0, #60H
 		mov R1, #70H
-		mov R2, #00H
-		; mov R2, #00H
-		mov @R0, #0FFH
+		mov @R0, #0c8H
 		inc R0
-		mov @R0, #90H
-		mov @R1, #0FFH
+		mov @R0, #01H
+		mov @R1, #92H
 		inc R1
-		mov @R1, #80H
+		mov @R1, #92H
 		RET
 	
 	sub_16bit:
 		;function to add two 16 bit numbers
 	
-		mov A, @R0	;R0 + 1
-		add A, @R1
-		JNC set_lsb
-		inc R2
+		mov A, @R0	;61
+		subb A, @R1
+		; no idea why the following 4 lines need to be commented
+		
+		; JNC set_lsb
+		; dec R0	;60
+		; dec @R0
+		; inc R0	;61
 		set_lsb:
 			inc R0	; 62
 			inc R0	; 63
@@ -37,16 +39,8 @@ org 00H
 			dec R0	;60
 			mov A, @R0
 			dec R1
-			add A, @R1
-			JNC set_msb
-			inc R0 ;61
-			inc R0 ;62
-			inc @R0
-			dec R0	;61
-			dec R0	;60
+			subb A, @R1
 
-		set_msb:
-			add A, R2
 			inc R0	; 61
 			inc R0	;62
 			inc R0 ;63
