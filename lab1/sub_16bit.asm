@@ -1,20 +1,20 @@
-; N partial sums
+; Repeat the previous question, but now perform subtraction of two 16-bit numbers.
 
 org 00H
 
 	Ljmp main
-	
+org 50H
 	INIT:
 		; adding 0xc821 and 0x9228
 		
 		mov R0, #60H
 		mov R1, #70H
-		mov @R0, #0c8H
+		mov @R0, #0FFH
 		inc R0
-		mov @R0, #01H
-		mov @R1, #92H
+		mov @R0, #0FFH
+		mov @R1, #0FCH
 		inc R1
-		mov @R1, #92H
+		mov @R1, #0DEH
 		RET
 	
 	sub_16bit:
@@ -24,10 +24,6 @@ org 00H
 		subb A, @R1
 		; no idea why the following 4 lines need to be commented
 		
-		; JNC set_lsb
-		; dec R0	;60
-		; dec @R0
-		; inc R0	;61
 		set_lsb:
 			inc R0	; 62
 			inc R0	; 63
@@ -40,7 +36,15 @@ org 00H
 			mov A, @R0
 			dec R1
 			subb A, @R1
+			
+			JNC set_msb 	;jump if no carry
 
+			inc R0;61
+			inc R0;62
+			inc @R0
+			dec R0
+			dec R0
+		set_msb:
 			inc R0	; 61
 			inc R0	;62
 			inc R0 ;63

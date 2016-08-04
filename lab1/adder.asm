@@ -8,8 +8,8 @@ org 000H;
 		; store the numbers to be added/subtracted at appropiate locations
 		mov R0, #50H
 		mov R1, #60H
-		mov 50H, #05H;
-		mov 60H, #01H;
+		mov 50H, #0FFH;
+		mov 60H, #0FFH;
 		RET
 	
 	Add_8bit:
