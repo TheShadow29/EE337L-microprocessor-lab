@@ -7,27 +7,21 @@ org 050H
 	
 	INIT:
 		; store the numbers to be added/subtracted at appropiate locations
-		mov R0, #50H
-		mov R1, #51H
+
 		mov 50H, #10
 		mov 51H, #55H	
-		
+		mov R2, 50H
+		mov R0, 51H
+		; mov R1, #51H	
 		RET
 
 	zero_out:
-		clr psw.3
-		clr psw.4
-		mov A, @R0
-		setb psw.3
-		mov R2, A
-		clr psw.3
-		mov A, @R1
-		setb psw.3
-		mov R1, A
+		mov A, R2
+		mov R3, A
 		loop: 
-			mov @R1, #00h
-			inc R1
-			djnz R2, loop
+			mov @R0, #00h
+			inc R0
+			djnz R3, loop
 		ret
 	main:
 		
