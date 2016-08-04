@@ -10,13 +10,20 @@ org 050H
 		mov R0, #50H
 		mov R1, #51H
 		mov 50H, #10
-		mov 51H, #52H	
-		mov R3, #00H
+		mov 51H, #55H	
+		
 		RET
 
 	zero_out:
+		clr psw.3
+		clr psw.4
 		mov A, @R0
+		setb psw.3
 		mov R2, A
+		clr psw.3
+		mov A, @R1
+		setb psw.3
+		mov R1, A
 		loop: 
 			mov @R1, #00h
 			inc R1
