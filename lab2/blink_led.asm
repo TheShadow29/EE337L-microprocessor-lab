@@ -16,7 +16,7 @@ org 050H
 		mov A, @R0
 		mov R1, A
 		back:
-			mov R2, #100
+			mov R2, #10
 			back1:
 				mov R3, #200
 				back2:

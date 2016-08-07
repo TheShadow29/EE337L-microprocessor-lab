@@ -106,7 +106,7 @@ org 50H
 		mov A, R1
 		mov R6, A
 		back:
-			mov R5, #100
+			mov R5, #10
 			back1:
 				mov R3, #200
 				back2:
