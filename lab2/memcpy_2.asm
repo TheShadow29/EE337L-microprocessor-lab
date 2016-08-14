@@ -8,9 +8,9 @@ org 050H
 	INIT:
 		; store the numbers to be added/subtracted at appropiate locations
 
-		mov 50H, #10
-		mov 51H, #60H	
-		mov 52H, #65H
+		;mov 50H, #5
+		;mov 51H, #62H	
+		;mov 52H, #60H
 		mov R2, 50H
 		mov R0, 51H	; pointer A
 		mov R1, 52H	; pointer B
@@ -18,18 +18,6 @@ org 050H
 		; mov R1, #51H	
 		RET
 
-	; copy_temp:
-	; 	mov R1, #20H
-	; 	cp_temp:
-	; 		mov A, @R0
-	; 		mov @R1, A
-	; 		inc R0
-	; 		inc R1
-	; 		djnz R2, cp_temp
-	; 	lcall init
-	; 	mov R0, #20H
-	; 	djnz R3, cp_temp
-	; 	ret
 
 	copy_a_back:
 		mov A, R2
@@ -61,9 +49,11 @@ org 050H
 	main:
 		
 		ACALL INIT
-		mov A, @R0
-		subb A, @R1
+		mov A, R0
+		subb A, R1
 		JNC a_front		; a > b
+		; if a > b then start from front 
+		; else start from back
 		a_back:
 			ACALL copy_a_back
 			Jmp fin

@@ -9,7 +9,7 @@ org 050H
 	INIT:
 		; store the numbers to be added/subtracted at appropiate locations
 		mov R0, #4FH
-		mov 4FH, #10;		
+		mov 4FH, #2;		
 		setb led
 		RET
 	delay:

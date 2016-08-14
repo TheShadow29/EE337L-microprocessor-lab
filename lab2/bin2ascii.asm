@@ -7,9 +7,9 @@ org 050H
 	
 	INIT:
 		; store the numbers to be added/subtracted at appropiate locations
-		mov 50H, #3
-		mov 51H, #55H	
-		mov 52H, #65H
+		;mov 50H, #3
+		;mov 51H, #55H	
+		;mov 52H, #65H
 		mov R2, 50H
 		mov R0, 51H	;read pointer
 		mov R1, 52H	;write pointer

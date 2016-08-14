@@ -8,8 +8,8 @@ org 050H
 	INIT:
 		; store the numbers to be added/subtracted at appropiate locations
 
-		mov 50H, #10
-		mov 51H, #55H	
+		;mov 50H, #10
+		;mov 51H, #55H	
 		mov R2, 50H
 		mov R0, 51H
 		; mov R1, #51H	

@@ -10,8 +10,8 @@ org 050H
 	
 	INIT:
 		; store the numbers to be added/subtracted at appropiate locations
-		mov 50H, #10
-		mov 51H, #55H	
+		mov 50H, #9
+		mov 51H, #60H	
 		mov R7, 50H
 		mov R0, 51H
 		RET
@@ -29,7 +29,7 @@ org 050H
 			djnz R2, loop
 		ret
 	delay:
-		mov R3, #200
+		mov R3, #20
 		back1:
 			mov R4, #200
 		back2:
