@@ -55,9 +55,9 @@ lcd_init:
          clr   LCD_rw         ;We are writing in instruction register
          setb  LCD_en         ;Enable H->L
 		 acall delay
-         clr   LCD_en
-         
+         clr   LCD_en         
 		 acall delay
+		 
          mov   LCD_data,#01H  ;Clear LCD
          clr   LCD_rs         ;Selected command register
          clr   LCD_rw         ;We are writing in instruction register
@@ -128,8 +128,8 @@ loop2:	 mov r1,#255
 ;------------- ROM text strings---------------------------------------------------------------
 org 300h
 my_string1:
-         DB   "Pt-51", 00H
+         DB   "Arka", 00H
 my_string2:
-		 DB   "IIT Bombay", 00H
+		 DB   "Sadhu", 00H
 end
 
