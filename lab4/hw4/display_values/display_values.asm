@@ -41,6 +41,11 @@ display_values:
 		lcall lcd_command
 		mov A, @R0
 		lcall lcd_senddata
+		inc R0
+		mov A, #86H
+		lcall lcd_command
+		mov A, @R0
+		lcall lcd_senddata
 		sjmp loop_disp
 	disp_null:
 		mov lcd_data,#01H	;Clear LCD

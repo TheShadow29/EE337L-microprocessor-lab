@@ -7,25 +7,34 @@ org 00h
 org 100h
 
 init:
-	mov 50H, #4
-	mov 51H, #60H
-	mov 52H, #70H
+	mov 50H, #2		;K
+	mov 51H, #80H	;array A
+	mov 52H, #90H	;array B
+	mov 53H, #0A0H	;bin2ascii
+	mov R2, 50H
+	mov R0, 51H
+	mov R1, 52H
+	ret
+init_read_values:
 	mov R2, 50H
 	mov R0, 51H
 	ret
+init_shuffle:
+	mov R2, 50H
+	mov R0, 51H
+	mov R1, 52H
+	ret
 init_bin2asc:
 	mov R2, 50H
-	mov R0, 51H	;read pointer
-	mov R1, 52H	;write pointer
-	mov R3, #30H
+	mov R0, 52H	;read pointer
+	mov R1, 53H	;write pointer
 	RET
 init_disp:
-	mov 50H, #4
-	mov 51H, #60H
-	mov 52H, #70H
 	mov R2, 50H
-	mov R0, 52H
+	mov R0, 53H
 	ret
+
+
 main:
 	acall init
 			lcall lcd_init
@@ -41,13 +50,33 @@ main:
 	mov dptr, #my_string1 	;Load DPTR with sring1 Addr
 	acall lcd_send_string   ;call text strings sending routine
 	acall delay
+	
 	lcall read_values
+
+	lcall shuffle
+
 	lcall bin2ascii
+
 	ljmp display_values
 
+shuffle:
+	lcall init_shuffle
+	dec R2
+	loop_shuffle:
+		mov A, @R0
+		inc R0
+		xrl A, @R0
+		mov @R1, A
+		inc R1
+		djnz R2, loop_shuffle
+	mov A, @R0
+	mov R0, 51H
+	xrl A, @R0
+	mov @R1, A
+	ret
 
 read_values:
-	
+	lcall init_read_values
 	loop_read:
 		mov P1,#00h
 		lcall pack_nibbles
