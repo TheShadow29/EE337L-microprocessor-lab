@@ -7,10 +7,11 @@ org 00h
 org 100h
 
 init:
-	mov 50H, #2		;K
-	mov 51H, #80H	;array A
-	mov 52H, #90H	;array B
-	mov 53H, #0A0H	;bin2ascii
+	mov 50H, #3			;K
+	mov 51H, #55H	;array A
+	mov 52H, #60H	;array B
+	mov 53H, #70H	;bin2ascii B
+	mov 54H, #80H	;bin2ascii A
 	mov R2, 50H
 	mov R0, 51H
 	mov R1, 52H
@@ -23,7 +24,13 @@ init_shuffle:
 	mov R2, 50H
 	mov R0, 51H
 	mov R1, 52H
+	mov R3, #30H
 	ret
+init_bin2asc_INP:
+	mov R2, 50H
+	mov R0, 52H	;read pointer
+	mov R1, 54H	;write pointer
+	RET
 init_bin2asc:
 	mov R2, 50H
 	mov R0, 52H	;read pointer
@@ -33,7 +40,10 @@ init_disp:
 	mov R2, 50H
 	mov R0, 53H
 	ret
-
+init_disp_inp:
+	mov R2, 50H
+	mov R0, 54H
+	ret
 
 main:
 	acall init
@@ -54,11 +64,18 @@ main:
 	lcall read_values
 
 	lcall shuffle
-
+	
+	; lcall init_bin2asc_INP
+	; lcall bin2ascii
+	; mov A, #0c1h
+	; lcall lcd_command
+	; mov R1, #54H
+	; lcall lcd_send_string1
+	
+	lcall init_bin2asc
 	lcall bin2ascii
-
+	
 	ljmp display_values
-
 shuffle:
 	lcall init_shuffle
 	dec R2
@@ -69,6 +86,7 @@ shuffle:
 		mov @R1, A
 		inc R1
 		djnz R2, loop_shuffle
+		
 	mov A, @R0
 	mov R0, 51H
 	xrl A, @R0
@@ -115,7 +133,6 @@ pack_nibbles:
 	ret
 
 bin2ascii:
-	lcall init_bin2asc
 	loop:
 		mov A, @R0
 		anl A, #0f0h
@@ -169,9 +186,12 @@ display_values:
 		lcall init_disp
 		lcall readnibble
 		mov R5, A
+		clr C
 		subb A, R2
+		
 		jnc disp_null 		;if A > R2
 		mov A, R0
+		add A, R5
 		add A, R5
 		mov R0, A
 		
@@ -293,7 +313,7 @@ loop2:	 mov r1,#255
 ;------------- ROM text strings---------------------------------------------------------------
 org 300h
 my_string1:
-         DB   "Starting", 00H
+         DB   "Starting_1", 00H
 ; my_string2:
 ; 		 DB   "Arka Sadhu", 00H
 end
