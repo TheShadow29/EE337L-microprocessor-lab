@@ -3,41 +3,26 @@ lcd_rs  equ P0.0
 lcd_rw equ P0.1
 lcd_en equ P0.2
 
-org 000H
-ljmp start
+ORG 0000H
+	LJMP main
 
-org 200H
-start:
-	mov P2, #00h
-	mov P1, #00h
-
-	acall delay
-	acall delay
-
-	acall lcd_init 	; initialize lcd
-
-	acall delay
-	acall delay
-	acall delay
-
-	mov A, #85H		; put cursor on first row, fifth column
-	acall lcd_command	;send command to the lcd
-
-	acall delay
-
-	mov dptr, #my_string1 	;Load DPTR with sring1 Addr
-	acall lcd_send_string   ;call text strings sending routine
-	acall delay
-
-	mov a, #0c3h	;Put cursor on second row,3 column
-	acall lcd_command
-	acall delay
-	mov dptr, #my_string2
-	acall lcd_send_string
-
-here: sjmp here
+ORG 0003H
+	lcall ext_interrupt
+	reti
 
 
+ORG 000BH ; Timer 0 overflow interrupt routine
+; Keep track of number of overflows here
+	lcall timer0_interrupt
+	reti
+
+org 001BH
+	lcall timer1_interrupt
+	reti
+
+
+
+org 0100H
 
 ;------------------------LCD Initialisation routine----------------------------------------------------
 lcd_init:
@@ -97,7 +82,7 @@ lcd_send_string:
 		pop 0e0h
 		ret
 ;-----------------------data sending routine-------------------------------------		     
- lcd_senddata:
+lcd_senddata:
          mov   LCD_data,A     ;Move the command to LCD port
          setb  LCD_rs         ;Selected data register
          clr   LCD_rw         ;We are writing
@@ -108,25 +93,159 @@ lcd_send_string:
 		 acall delay
 		 ; lcall lcd_init_helper
 		 ; acall delay
-         ret                  ;Return from busy routine
+         ret       
 
-		
 ;----------------------delay routine-----------------------------------------------------
 delay:	 push 0
 	 push 1
          mov r0,#1
-loop2:	 mov r1,#255
+	loop2:	 mov r1,#255
 	 loop1:	 djnz r1, loop1
-	 djnz r0, loop2
-	 pop 1
-	 pop 0 
-	 ret
+		 djnz r0, loop2
+		 pop 1
+		 pop 0 
+		 ret
+
+
+;--------------- Specific to this application -------------
+
+disp_lcd:
+	MOV A, R7
+	LCALL print_lcd
+	MOV A, TH0
+	LCALL print_lcd
+	MOV A, TL0
+	LCALL print_lcd
+	ret
+	 
+print_lcd:
+	USING 0
+	PUSH AR3
+	
+	MOV R3,A
+	ANL A, #0F0H
+	SWAP A
+	LCALL bin2ascii
+	LCALL lcd_senddata
+	 
+	MOV A, R3
+	ANL A, #0FH
+	LCALL bin2ascii
+	LCALL lcd_senddata
+	
+	POP AR3
+	 
+	RET	
+bin2ascii:
+	USING 0
+	PUSH AR1
+	
+	MOV R1, A
+	CLR C
+	SUBB A, #0AH
+	MOV A, R1
+	JNC down
+		ADD A, #30H
+		JMP further
+	down:
+		ADD A, #37H
+		further:
+	POP AR1
+	RET
+
+delay_2:
+	push 05H
+	mov R3, #40
+	back12:
+		mov R4, #200
+	back22:
+		mov R5, #0FFh
+	back32: 
+		djnz R5, back32
+		djnz R4, back22
+		djnz R3, back12
+	pop 05H
+	ret
+
+
+ext_interrupt:
+	clr IE.0
+	mov A, #81H		; put cursor on first row, fifth column
+	acall lcd_command	;send command to the lcd
+	acall delay
+	mov dptr, #my_string1 	;Load DPTR with sring1 Addr
+	acall lcd_send_string   ;call text strings sending routine
+	acall delay
+
+	mov A, #0c0H
+	acall lcd_command
+
+	mov dptr, #my_string2
+	acall lcd_send_string
+
+	acall delay
+
+	lcall disp_lcd
+	mov R7, #00H
+	lcall delay_2
+	setb P1.4
+	ret
+increment:
+	setb TR0
+	setb TR1
+	loop_here : jnb P1.4, loop_here
+	ret
+
+timer0_interrupt:
+	inc R7
+	ret
+
+timer1_interrupt:
+	mov TH1, #3ch
+	mov TL1, #0b0h
+	djnz R6, fin_t1
+	mov R6, #28H
+	cpl P3.2
+	fin_t1:
+	ret
+	
+initialize:
+	mov TH0, #00H
+	mov TL0, #00H
+	mov TMOD, #19H
+	mov IE, #8BH
+	clr P1.4
+
+
+	setb IT0
+	
+	ret
+
+;--------------- MAIN STARTS HERE --------------------
+main:
+	mov TH1, #3ch
+	mov TL1, #0b0h
+	
+	mov R6, #28h
+	mov R7, #00h
+	clr P3.2
+	loop_main:
+		
+		acall lcd_init
+		lcall initialize
+		WAIT_NEW_PULSE: JB P3.2, WAIT_NEW_PULSE ;
+		lcall increment
+		
+
+		
+		ljmp loop_main
 
 ;------------- ROM text strings---------------------------------------------------------------
 org 300h
 my_string1:
-         DB   "Arka123", 00H
+         DB   "PULSE WIDTH", 00H
 my_string2:
-		 DB   "Sadhu", 00H
-end
+		 DB   "COUNT IS ", 00H
 
+
+end
