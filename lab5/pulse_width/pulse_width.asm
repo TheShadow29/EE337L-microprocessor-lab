@@ -16,9 +16,9 @@ ORG 000BH ; Timer 0 overflow interrupt routine
 	lcall timer0_interrupt
 	reti
 
-org 001BH
-	lcall timer1_interrupt
-	reti
+; org 001BH
+; 	lcall timer1_interrupt
+; 	reti
 
 
 
@@ -170,6 +170,7 @@ delay_2:
 
 ext_interrupt:
 	clr IE.0
+	clr TR0
 	mov A, #81H		; put cursor on first row, fifth column
 	acall lcd_command	;send command to the lcd
 	acall delay
@@ -186,58 +187,56 @@ ext_interrupt:
 	acall delay
 
 	lcall disp_lcd
-	mov R7, #00H
 	lcall delay_2
+	mov R7, #00H
 	setb P1.4
 	ret
-increment:
-	setb TR0
-	setb TR1
-	loop_here : jnb P1.4, loop_here
-	ret
+; increment:
+; 	;setb TR1
+; 	loop_here : jnb P1.4, loop_here
+; 	ret
 
 timer0_interrupt:
 	inc R7
 	ret
 
-timer1_interrupt:
-	mov TH1, #3ch
-	mov TL1, #0b0h
-	djnz R6, fin_t1
-	mov R6, #28H
-	cpl P3.2
-	fin_t1:
-	ret
+; timer1_interrupt:
+; 	mov TH1, #3ch
+; 	mov TL1, #0b0h
+; 	djnz R6, fin_t1
+; 	mov R6, #28H
+; 	cpl P3.2
+; 	fin_t1:
+; 	ret
 	
 initialize:
 	mov TH0, #00H
 	mov TL0, #00H
-	mov TMOD, #19H
-	mov IE, #8BH
+	mov TMOD, #09H
+	mov IE, #83H
 	clr P1.4
-
-
+	setb P3.2
 	setb IT0
 	
 	ret
 
 ;--------------- MAIN STARTS HERE --------------------
 main:
-	mov TH1, #3ch
-	mov TL1, #0b0h
+	;mov TH1, #3ch
+	;mov TL1, #0b0h
 	
-	mov R6, #28h
+	;mov R6, #28H
 	mov R7, #00h
-	clr P3.2
+	;clr P3.2
+	acall lcd_init
 	loop_main:
+		clr P1.4
 		
-		acall lcd_init
-		lcall initialize
+		setb TR0
+		lcall Initialisationlize
 		WAIT_NEW_PULSE: JB P3.2, WAIT_NEW_PULSE ;
-		lcall increment
-		
-
-		
+		; lcall increment
+		loop_here : jnb P1.4, loop_here
 		ljmp loop_main
 
 ;------------- ROM text strings---------------------------------------------------------------
