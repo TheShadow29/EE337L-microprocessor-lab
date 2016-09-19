@@ -17,16 +17,16 @@ sbit lcd_busy = P2^7;   //lcd busy flag
 
 bit transmit_completed = 0;       //check if spi data transmit is complete
 char serial_data, data_save_high, data_save_low;
-char* hello = "hello";
-char* world = "world";
+	char* hello = "hello";
+	char* world = "world";
 void main (void)
 {
     P2 = 0x00;      //make port 2 output
     lcd_init();
-
+	
     while(1)
     {
-				lcd_cmd_write(0x85);
+				lcd_cmd_write(0x80);
         lcd_write_string(hello,5);
 				lcd_cmd_write(0xc5);
 				lcd_write_string(world,5);
