@@ -139,8 +139,7 @@ void it_serial(void) interrupt 4
 
 void timer1_init()
 {
-	TH1 = 0xe8;
-	TL1 = 0xe8;
+	TH1 = 0xcc;
 	TMOD = 0x20;
 	TR1 = 1;
 }
