@@ -11,8 +11,12 @@ void LCD_DataWrite(char dat);
 void LCD_CmdWrite(char cmd);
 void LCD_StringWrite(char * str, unsigned char len);
 void LCD_Ready();
+void check_switch();
 void sdelay(int delay);
 void delay_ms(int delay);
+
+bit switch_prev;
+bit switch_curr;
 
 sbit CS_BAR = P1^4;									// Chip Select for the ADC
 sbit LCD_rs = P0^0;  								// LCD Register Select
@@ -28,6 +32,10 @@ unsigned char regA;
 unsigned char regB;
 
 sbit led_pin = P1^4;
+sbit p1_0 = P1^0;
+sbit p1_1 = P1^1;
+sbit p1_2 = P1^2;
+sbit p1_3 = P1^3;
 sbit p1_4 = P1^4;
 sbit p1_5 = P1^5;
 sbit p1_6 = P1^6;
@@ -52,9 +60,26 @@ void main(void)
 	{
 		LCD_CmdWrite(0x80);
 		LCD_DataWrite(recieved_data);
-		//LCD_DataWrite(parity_bit);
+		//LCD_StringWrite(recieved_string,16);
+		check_switch();
+		LCD_CmdWrite(0xc0);
+		LCD_DataWrite(trans_data);
+		//LCD_StringWrite(tranmitted_string,16);
+		delay_ms(500);
 	}
 }
+
+void check_switch()
+{
+	switch_prev = switch_curr;
+	p1_3 = 1;
+	switch_curr = p1_3;
+	if (switch_curr != switch_prev)
+	{
+		transmit_data();	
+	}
+}
+
 void transmit_data()
 {
 	regA = trans_data + 0x01;

@@ -45,16 +45,17 @@ org 000bH
 	inc R7
 	reti
 
-org 001BH
-	lcall timer1_interrupt
-	reti
-
-
 org 100H
 
 isr_ext0:
-	clr IE0
-	clr TR0
+	; clr TR0
+	cjne R6, #01h, calc
+	mov R6, #00h
+	mov TH0, #00h
+	mov TL0, #00h
+	ret
+	calc:
+	clr TR0	
 	mov A, R7
 	mov R5, A
 	mov A, #0cAH
@@ -62,22 +63,10 @@ isr_ext0:
 	acall delay
 
 	lcall disp_lcd
-
 	
-	mov TH0, #00h
-	mov TL0, #00h
-	mov R7, #00h
-	setb TR0
-	ret
-
-timer1_interrupt:
-	clr TF1
-	mov TH1, #3ch
-	mov TL1, #0b0h
-	djnz R6, fin_t1
-	mov R6, #14H
-	cpl P3.2
-	fin_t1:
+	; mov TH0, #00h
+	; mov TL0, #00h
+	; mov R7, #00h
 	ret
 
 disp_lcd:
@@ -130,18 +119,14 @@ T2_INIT:
 	MOV RCAP2H,#0E8H;
 	MOV RCAP2L,#90H;
 	ret
-initialization:
-	mov R6, #28h
-	mov R7, #00h
-	
-	setb P3.2
 
-	mov TMOD, #19h
+initialization:
+	mov R6, #01h
+	mov R7, #00h
+
+	mov TMOD, #09h
 	mov TH0, #00h
 	mov TL0, #00h
-
-	mov TH1, #03ch
-	mov TL1, #0b0h
 
 	acall delay
 	acall delay
@@ -166,19 +151,13 @@ initialization:
 	mov dptr, #my_string2
 	acall lcd_send_string
 
-	;mov IE, #8BH
 	mov IE, #83H
-	setb TR1
-	setb TR2
 	setb IT0
-	setb PT1
-
+	setb TR2
+	
 	WAIT_NEW_PULSE: JB P3.2, WAIT_NEW_PULSE 
-
 	
 	setb TR0
-
-	
 	ret
 
 

@@ -16,7 +16,7 @@ void LCD_StringWrite(char * str, unsigned char len);
 void LCD_Ready();
 void sdelay(int delay);
 void delay_ms(int delay);
-unsigned char* int_to_string(int val);
+char int_to_string(int val);
 
 sbit CS_BAR = P1^4;									// Chip Select for the ADC
 sbit LCD_rs = P0^0;  								// LCD Register Select
@@ -28,8 +28,6 @@ bit transmit_completed= 0;					// To check if spi data transmit is complete
 bit offset_null = 0;								// Check if offset nulling is enabled
 bit roundoff = 0;
 int adcVal=0, avgVal=0, initVal=0, adcValue = 0;
-unsigned long out_volt = 0;
-int j = 0;
 unsigned char serial_data;
 unsigned char data_save_high;
 unsigned char data_save_low;
@@ -37,11 +35,14 @@ unsigned char count=0, i=0;
 unsigned char weight[4];
 unsigned char voltage[4];
 float fweight=0;
+unsigned long volts;
+unsigned long out_volt = 0;
+unsigned long max_volt = 0;
+unsigned long max_volt2 = 0;
+int j = 0;
+int count1;
 
-sbit pin_tog = P3^3;
-
-
-
+bit r1;
 
 /**
 
@@ -57,6 +58,8 @@ void main(void)
 	P2 = 0x00;											// Make Port 2 output 
 	P1 &= 0xEF;											// Make P1 Pin4-7 output
 	P0 &= 0xF0;											// Make Port 0 Pins 0,1,2 output
+	r1 = 1;
+	count1 = 0;
 	
 	SPI_Init();
 	LCD_Init();
@@ -64,6 +67,11 @@ void main(void)
 	
 	while(1)												// endless 
 	{
+		// count1++;
+		// if (count1 == 2)
+		// {
+		// 	max_volt = 0;
+		// }
 		CS_BAR = 0;                 // enable ADC as slave		 
 		SPDAT= 0x01;								// Write start bit to start ADC 
 		while(!transmit_completed);	// wait end of transmition;TILL SPIF = 1 i.e. MSB of SPSTA
@@ -81,78 +89,48 @@ void main(void)
 		CS_BAR = 1;                	// disable ADC as slave
 		
 		adcVal = (data_save_high <<8) + (data_save_low);
-		out_volt = adcVal;
+		// volts = adcVal;
+		volts = adcVal * 4.883;
 		out_volt = adcVal * 4.883;
-		//out_volt = out_volt / 1024;
-
-		if (out_volt >= 4370)
+		if (out_volt > max_volt)
 		{
-			th_0 = 0xff;
-			tl_0 = 0x38;
+			max_volt = out_volt;
+		}
+		// max_volt2 = 2.725 * max_volt - 4;
+		max_volt2 = max_volt;
+		// max_volt2 = (max_volt - 4)/2.725;
+		for(j = 0; j < 4; j++)
+		{
+			voltage[3- j] = max_volt2%10 + '0';
+			max_volt2 = max_volt2/10;
+		}
+		//volts = 2;
+		if (max_volt < 3370)
+		{
+			r1 = 1;
 		}
 		else
 		{
-			if(out_volt >= 4300)
-			{
-				th_0 = 0xfe;
-				tl_0 = 0x0c;
-			}
-			else
-			{
-				th_0 = 0xfc;
-				tl_0 = 0x18;
-			}
-
+			r1 = 0;
 		}
-
-		for(j = 0; j < 4; j++)
+		if(r1)
 		{
-			voltage[3- j] = out_volt%10 + '0';
-			out_volt = out_volt/10;
+			LCD_CmdWrite(0x80);
+			LCD_StringWrite("Range 1",7);
 		}
-
-		LCD_CmdWrite(0x80);
-		LCD_StringWrite("Voltage: ",9);
-		LCD_StringWrite(voltage,4);
-		LCD_StringWrite(" mV",3);
-
+		else
+		{
+			LCD_CmdWrite(0x80);
+			LCD_StringWrite("Range 2",7);
+		}
+		// LCD_CmdWrite(0xc0);
+		// LCD_StringWrite(voltage,4);
+		// LCD_StringWrite(" mV",3);
+		delay_ms(5);
 		
-		delay_ms(500);
 		
   }
 }
-
-// void calc_timer_val()
-// {
-// 	time_period = 1000/freq;
-// 	t_val = 256 - time_period;
-// 	th_0 = t_val;
-// 	// th_0 = t_val/256;
-// 	// tl_0 = t_val%256;
-// }
-
-void timer_init()
-{
-	//use timer0 for generating the sq wave signal
-	TMOD = 0x01;
-	TH0 = th_0;
-	TL0 = tl_0;
-	EA = 1;
-	ET0 = 1;
-	TR0 = 1;
-}
-
-// unsigned char* int_to_string(int val)
-// {
-// 	unsigned char str[4];
-// 	for(int i = 0; i < 4; i++)
-// 	{
-// 		str[3- i] = val%10;
-// 		val = val/10;
-// 	}
-// 	return str;
-// }
-
 /**
  * FUNCTION_PURPOSE:interrupt
  * FUNCTION_INPUTS: void
@@ -177,12 +155,16 @@ void it_SPI(void) interrupt 9 /* interrupt address is 0x004B, (Address -3)/8 = i
 	}
 }
 
-void it_timer0(void) interrupt 1
+void timer0_ISR (void) interrupt 1
 {
-	TL0 = tl_0;
-	TH0 = th_0;
-	pin_tog = ~pin_tog;
+	//Initialize TH0
+	//Initialize TL0
+	//Increment Overflow 
+	//Write averaging of 10 samples code here
+
 }
+
+
 /**
 
  * FUNCTION_INPUTS:  P1.5(MISO) serial input  
@@ -208,6 +190,19 @@ void SPI_Init()
  * FUNCTION_OUTPUTS: none
  */
 
+void Timer_Init()
+{
+	// Set Timer0 to work in up counting 16 bit mode. Counts upto 
+	// 65536 depending upon the calues of TH0 and TL0
+	// The timer counts 65536 processor cycles. A processor cycle is 
+	// 12 clocks. FOr 24 MHz, it takes 65536/2 uS to overflow
+    
+	//Initialize TH0
+	//Initialize TL0
+	//Configure TMOD 
+	//Set ET0
+	//Set TR0
+}
 	/**
  * FUNCTION_PURPOSE:LCD Initialization
  * FUNCTION_INPUTS: void

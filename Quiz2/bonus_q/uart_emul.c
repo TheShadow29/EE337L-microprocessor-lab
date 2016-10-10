@@ -26,9 +26,15 @@ sbit LCD_busy = P2^7;								// LCD Busy Flag
 
 bit switch_prev;
 bit switch_curr;
+bit p_bit;
+
+//bit uart_b[8] = 00001111;
+
+float del = 1;
 
 unsigned char recieved_data;
 unsigned char trans_data;
+int x1 = 0;
 
 char recieved_string[16];
 char tranmitted_string[16] = "Silver Shadow 29";
@@ -37,6 +43,11 @@ unsigned char psw_serial;
 unsigned parity_bit;
 unsigned char regA;
 unsigned char regB;
+
+int to_send;
+
+void uart_emul(unsigned char r);
+void init_uart_emul(unsigned char r);
 
 sbit led_pin = P1^4;
 sbit p1_0 = P1^0;
@@ -59,33 +70,71 @@ void main(void)
 	serial_init();
 	timer1_init();
 	LCD_Init();
+	
 	trans_data = 0x43;
-	recieved_data = 0x41;
-	switch_prev = 1;
-	switch_curr = 0;
+	init_uart_emul(trans_data);
+	// recieved_data = 0x41;
+	// switch_prev = 1;
+	// switch_curr = 0;
 	REN = 1;
 	while(1)
 	{
+		uart_emul(trans_data);
 		LCD_CmdWrite(0x80);
-		//LCD_DataWrite(recieved_data);
-		LCD_StringWri	te(recieved_string,16);
-		check_switch();
-		LCD_CmdWrite(0xc0);
-		//LCD_DataWrite(trans_data);
-		LCD_StringWrite(tranmitted_string,16);
-		delay_ms(500);
+		LCD_DataWrite(recieved_data);
+		
+		// LCD_StringWrite(recieved_string,16);
+		// // check_switch();
+		// LCD_CmdWrite(0xc0);
+		// //LCD_DataWrite(trans_data);
+		// LCD_StringWrite(tranmitted_string,16);
+		//delay_ms(500);
 	}
 }
 
-void check_switch()
+void init_uart_emul(unsigned char r)
 {
-	switch_prev = switch_curr;
-	p1_3 = 1;
-	switch_curr = p1_3;
-	if (switch_curr != switch_prev)
+	regA = r + 0x01;
+	regB = regA - 0x01;
+	p_bit = PSW^0;
+	if (p_bit)
 	{
-		transmit_data();	
+		parity_bit = 0x01;
 	}
+	else
+	{
+		parity_bit = 0x00;
+	}
+	// x1 = 0;
+	
+	// while (x1 < 8)
+	// {
+	// 	uart_b[x1] = r^x1;
+	// 	x1++;
+	// }
+}
+
+
+void uart_emul(unsigned char r)
+{
+//	to_send = (0x01 << 10) + (parity_bit <<9) + (r<<1) + 0x00;
+	to_send = 0x0200;
+	to_send += r*2;
+
+	// p1_7 = 0;	//start bit
+	// delay_ms(del);
+	x1 = 0;
+	while(x1 < 10)
+	{
+		p1_7 = to_send%2;
+		to_send = to_send/2;
+		delay_ms(del);
+		x1++;
+	}
+	// p1_7 = parity_bit;
+	// delay_ms(del);
+	// p1_7 = 1;	//stop bit
+
 }
 
 void transmit_data()
@@ -121,38 +170,45 @@ void rec_data(int j)
 
 void it_serial(void) interrupt 4
 {
+	// if (RI == 1)
+	// {
+	// 	rec_data(rec_counter);
+	// 	rec_counter++;
+	// 	if (rec_counter == 16)
+	// 	{
+	// 		rec_counter = 0;
+	// 	}
+	// }
+	// if (TI == 1)
+	// {
+	// 	TI = 0;
+	// 	led_pin = ~led_pin;
+	// }
 	if (RI == 1)
 	{
-		rec_data(rec_counter);
-		rec_counter++;
-		if (rec_counter == 16)
-		{
-			rec_counter = 0;
-		}
-	}
-	if (TI == 1)
-	{
-		TI = 0;
-		led_pin = ~led_pin;
+		recieved_data = SBUF;
+		RI = 0;
 	}
 }
 
 void timer1_init()
 {
-	TH1 = 0xcc;
+	//TH1 = 0xcc;
+	TH1 = 0x83;
 	TMOD = 0x20;
 	TR1 = 1;
 }
 
 void serial_init()
 {
-	SCON = 0xc0;
+	SCON = 0x40;
 	// SM0 = 1;
 	// SM1 = 1;
 	// SM2 = 0;
 	EA = 1;
 	ES = 1;
 	ET1 = 0;
+	PCON &= 0x7f;
 	// RI = 0;
 	// TI = 0;
 	// REN = 0;

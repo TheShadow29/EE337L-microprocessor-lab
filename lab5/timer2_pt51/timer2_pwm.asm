@@ -55,8 +55,6 @@ org 0100H
 		; ;timer mode */
 		; CLR CP_RL2;
 		; ;reload mode */
-		clr IE.7
-		clr IE.5;
 		;clear timer2 interrupt */
 		ret
 ;--------------- MAIN STARTS HERE --------------------

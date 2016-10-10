@@ -7,6 +7,12 @@
 #include "stdio.h"
 #define LCD_data  P2	    					// LCD Data port
 
+int th_0;
+int tl_0;
+int freq = 50;
+int time_period;
+int t_val;
+
 void SPI_Init();
 void LCD_Init();
 void Timer_Init();
@@ -81,18 +87,19 @@ void main(void)
 		CS_BAR = 1;                	// disable ADC as slave
 		
 		adcVal = (data_save_high <<8) + (data_save_low);
-		out_volt = adcVal;
+		// out_volt = adcVal;
 		out_volt = adcVal * 4.883;
+		// out_volt = 3000;
 		//out_volt = out_volt / 1024;
 
-		if (out_volt >= 4370)
+		if (out_volt >= 3370)
 		{
 			th_0 = 0xff;
 			tl_0 = 0x38;
 		}
 		else
 		{
-			if(out_volt >= 4300)
+			if(out_volt >= 1670)
 			{
 				th_0 = 0xfe;
 				tl_0 = 0x0c;
@@ -117,7 +124,7 @@ void main(void)
 		LCD_StringWrite(" mV",3);
 
 		
-		delay_ms(500);
+		delay_ms(5);
 		
   }
 }

@@ -1,14 +1,6 @@
 #include "at89c5131.h"
 #include "stdio.h"
-#define LCD_data  P2	    					// LCD Data port
-
-void serial_init();
-void timer1_init();
-void transmit_data();
-void rec_data(int j);
-void check_switch();
-
-int rec_counter = 0;
+#define LCD_data P2
 
 void LCD_Init();
 void LCD_DataWrite(char dat);
@@ -18,144 +10,131 @@ void LCD_Ready();
 void sdelay(int delay);
 void delay_ms(int delay);
 
+void ext_interrupt1();
+
 sbit CS_BAR = P1^4;									// Chip Select for the ADC
 sbit LCD_rs = P0^0;  								// LCD Register Select
 sbit LCD_rw = P0^1;  								// LCD Read/Write
 sbit LCD_en = P0^2;  								// LCD Enable
 sbit LCD_busy = P2^7;								// LCD Busy Flag
 
-bit switch_prev;
-bit switch_curr;
+int counter;
+int cou;
+char char_to_show[6];
+char ch_th1[2];
+char ch_tl1[2];
+char ch_ct[2];
+int th_1;
+int tl_1;
+int i;
 
-unsigned char recieved_data;
-unsigned char trans_data;
+sbit pin_tog = P1^1;
 
-char recieved_string[16];
-char tranmitted_string[16] = "Silver Shadow 29";
+sfr IP = 0xB8;
+sbit px1 = IP^3;
+sbit p3_3 = P3^3;
 
-unsigned char psw_serial;
-unsigned parity_bit;
-unsigned char regA;
-unsigned char regB;
 
-sbit led_pin = P1^4;
-sbit p1_0 = P1^0;
-sbit p1_1 = P1^1;
-sbit p1_2 = P1^2;
-sbit p1_3 = P1^3;
-sbit p1_4 = P1^4;
-sbit p1_5 = P1^5;
-sbit p1_6 = P1^6;
-sbit p1_7 = P1^7;
+void timer_init();
+char check_num(int num);
+bit can_write = 0;
 
-void main(void)
+void main()
 {
-	P1 = 0x00;
-	p1_4 = 0;
-	p1_5 = 0;
-	p1_6 = 0;
-	p1_7 = 0;
-	led_pin = 0;
-	serial_init();
-	timer1_init();
+	timer_init();
+	cou = 0;
+	//p3_3 = 0;
 	LCD_Init();
-	trans_data = 0x43;
-	recieved_data = 0x41;
-	switch_prev = 1;
-	switch_curr = 0;
-	REN = 1;
+	while(p3_3)
+	{}
+		TR1 = 1;
 	while(1)
-	{
+	{	
+
 		LCD_CmdWrite(0x80);
-		//LCD_DataWrite(recieved_data);
-		LCD_StringWri	te(recieved_string,16);
-		check_switch();
+		LCD_StringWrite("Pulse Width ",12);
 		LCD_CmdWrite(0xc0);
-		//LCD_DataWrite(trans_data);
-		LCD_StringWrite(tranmitted_string,16);
-		delay_ms(500);
+		LCD_StringWrite("Count is ",9);
+			LCD_StringWrite(ch_ct,2);
+			LCD_StringWrite(ch_th1,2);
+			LCD_StringWrite(ch_tl1,2);
+		can_write = 1;
+
 	}
 }
 
-void check_switch()
+void timer_init()
 {
-	switch_prev = switch_curr;
-	p1_3 = 1;
-	switch_curr = p1_3;
-	if (switch_curr != switch_prev)
-	{
-		transmit_data();	
-	}
-}
-
-void transmit_data()
-{
-	int i = 0;
-	while (i < 16)
-	{
-		trans_data = tranmitted_string[i];
-		regA = trans_data + 0x01;
-		regB = regA - 0x01;
-		if(PSW^0 == 1)	
-		{
-			parity_bit = 0x31;
-			TB8 = 1;
-		}
-		else
-		{
-			parity_bit = 0x32;
-			TB8 = 0;
-		}
-		SBUF = trans_data;
-		delay_ms(10);
-		i++;
-	}
-}
-
-void rec_data(int j)
-{
-	recieved_data = SBUF;
-	recieved_string[j] = recieved_data;
-	RI = 0;
-}
-
-void it_serial(void) interrupt 4
-{
-	if (RI == 1)
-	{
-		rec_data(rec_counter);
-		rec_counter++;
-		if (rec_counter == 16)
-		{
-			rec_counter = 0;
-		}
-	}
-	if (TI == 1)
-	{
-		TI = 0;
-		led_pin = ~led_pin;
-	}
-}
-
-void timer1_init()
-{
-	TH1 = 0xcc;
-	TMOD = 0x20;
-	TR1 = 1;
-}
-
-void serial_init()
-{
-	SCON = 0xc0;
-	// SM0 = 1;
-	// SM1 = 1;
-	// SM2 = 0;
+	// set T1 to calculate pulse width and setup External interrupt T1
+	TH1 = 0x00; 
+	TL1 = 0x00;
+	TH0 = 0x3c;
+	TL0 = 0xb0;
+	counter = 0;
+	TMOD = 0x91;
+	IT1 = 1;
 	EA = 1;
-	ES = 1;
-	ET1 = 0;
-	// RI = 0;
-	// TI = 0;
-	// REN = 0;
+	ET1 = 1;
+	ET0 = 1;
+	EX1 = 1;
+	TR1 = 0;
+	TR0 = 1;
+	px1 = 1;
+}
+
+void it_timer0(void) interrupt 1
+{
+	pin_tog = ~pin_tog;
+	//p3_3 = ~p3_3;
+	TH0 = 0x3c;
+	TL0 = 0xb0;
+}
+
+
+void it_timer1 (void) interrupt 3
+{
+	counter++;
+	TL1 = 0x00;
+	TH1 = 0x00;
+}
+
+void it_ext_1 (void) interrupt 2
+{
+	ext_interrupt1();
+}
+
+void ext_interrupt1()
+{
+	th_1 = TH1;
+	tl_1 = TL1;
+	for (i = 0; i < 2; i++)
+	{
+		ch_th1[1-i] =  check_num(th_1%16);
+		ch_tl1[1-i] = check_num(tl_1%16);
+		ch_ct[1-i] = check_num(counter%16);
+		th_1 = th_1/16;
+		tl_1 = tl_1/16;
+		counter = counter/16;
+	}
+	//TH1 = 0x00;
+	//TL1 = 0x00;
+	//counter = 0;
+	can_write = 1;
+	TR1 = 0;
+}
+
+char check_num(int num)
+{
+	char a;
+	if (num >= 10)
+	{
+		a = num - 10 + 'A';
+	}
+	else
+	{
+		a = num + '0';
+	}
+	return a;
 }
 
 
